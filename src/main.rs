@@ -8,17 +8,21 @@ async fn main() {
 }
 
 async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
-    let (code, message) = if err.is_not_found() {
-        (StatusCode::NOT_FOUND, "Not Found".to_string())
-    } else if err.find::<warp::reject::PayloadTooLarge>().is_some() {
-        (StatusCode::BAD_REQUEST, "Payload too large".to_string())
-    } else {
-        eprintln!("unhandled error: {:?}", err);
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Internal Server Error".to_string(),
-        )
-    };
 
     Ok(warp::reply::with_status(message, code))
 }
+
+
+// in main
+let upload_route = warp::path("upload")
+    .and(warp::post())
+    .and(warp::multipart::form().max_length(5_000_000))
+    .and_then(upload);
+
+let router = upload_route.or(download_route).recover(handle_rejection);
+
+async fn upload(form: FormData) -> Result<impl Reply, Rejection> {
+    let parts: Vec<Part> = form.try_collect().await.map_err(|e| {
+        eprintln!("form error: {}", e);
+        warp::reject::reject()
+    })?;
