@@ -9,7 +9,7 @@ async fn main() {
 
 async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {
 
-    Ok(warp::reply::with_status(message, code))
+    Ok(warp::reply::with_status(message, code));
 }
 
 
